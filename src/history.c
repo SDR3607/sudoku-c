@@ -16,17 +16,32 @@ void history_init(MoveHistory *history) {
 }
 
 int history_push(MoveHistory *history, Move move) {
-    /* STUDENT TODO 4: Append one move to the resizable history array. */
-    (void)history;
-    (void)move;
-    return 0;
+    if (history == NULL) {
+        return 0;
+    }
+    if (history->count >= history->capacity) {
+        size_t new_capacity = (history->capacity == 0) ? (size_t)INITIAL_HISTORY_CAPACITY : history->capacity * 2U;
+        Move *new_items = realloc(history->items, new_capacity * sizeof(Move));
+        if (new_items == NULL) {
+            return 0;
+        }
+        history->items = new_items;
+        history->capacity = new_capacity;
+    }
+    history->items[history->count] = move;
+    history->count++;
+    return 1;
 }
 
 int history_pop(MoveHistory *history, Move *result) {
-    /* STUDENT TODO 4: Remove and return the most recent move. */
-    (void)history;
-    (void)result;
-    return 0;
+    if (history == NULL || history->count == 0 || history->items == NULL) {
+        return 0;
+    }
+    history->count--;
+    if (result != NULL) {
+        *result = history->items[history->count];
+    }
+    return 1;
 }
 
 void history_clear(MoveHistory *history) {
@@ -38,6 +53,12 @@ void history_clear(MoveHistory *history) {
 }
 
 void history_destroy(MoveHistory *history) {
-    /* STUDENT TODO 4: Release all storage owned by the history. */
-    (void)history;
+    if (history == NULL) {
+        return;
+    }
+
+    free(history->items);
+    history->items = NULL;
+    history->count = 0;
+    history->capacity = 0;
 }

@@ -30,24 +30,74 @@ static unsigned char *create_fixed_map(const SudokuBoard *puzzle) {
 }
 
 SudokuGame *game_create(void) {
-    /* STUDENT TODO 5: Construct an empty game object. */
-    return NULL;
+    SudokuGame *game = malloc(sizeof(*game));
+    if (game == NULL) {
+        return NULL;
+    }
+
+    game->puzzle = NULL;
+    game->solution = NULL;
+    game->fixed = NULL;
+    game->active = 0;
+    game->difficulty = DIFFICULTY_MEDIUM;
+    history_init(&game->history);
+
+    return game;
 }
 
 void game_destroy(SudokuGame **game_ptr) {
-    /* STUDENT TODO 5: Release every allocation owned by the game. */
-    (void)game_ptr;
+    if (game_ptr == NULL || *game_ptr == NULL) {
+        return;
+    }
+
+    SudokuGame *game = *game_ptr;
+    board_destroy(&game->puzzle);
+    board_destroy(&game->solution);
+    free(game->fixed);
+    game->fixed = NULL;
+    history_destroy(&game->history);
+    free(game);
+    *game_ptr = NULL;
 }
 
 int game_start_new(SudokuGame *game, Difficulty difficulty) {
-    /*
-     * STUDENT TODO 6: Replace the current game with a newly generated one.
-     * A failed replacement must leave an existing game unchanged.
-     */
-    (void)game;
-    (void)difficulty;
-    (void)create_fixed_map;
-    return 0;
+    unsigned char *new_fixed;
+    int holes = 0;
+
+    if (game == NULL) {
+        return 0;
+    }
+
+    SudokuBoard *new_solution = sudoku_generate_solution();
+    if (new_solution == NULL) {
+        return 0;
+    }
+
+    SudokuBoard *new_puzzle = sudoku_generate_puzzle(new_solution, difficulty, &holes);
+    if (new_puzzle == NULL) {
+        board_destroy(&new_solution);
+        return 0;
+    }
+
+    new_fixed = create_fixed_map((new_puzzle));
+    if (new_fixed == NULL) {
+        board_destroy(&new_puzzle);
+        board_destroy(&new_solution);
+        return 0;
+    }
+
+    board_destroy(&game->puzzle);
+    board_destroy(&game->solution);
+    free(game->fixed);
+
+    game->puzzle = new_puzzle;
+    game->solution = new_solution;
+    game->fixed = new_fixed;
+    game->difficulty = difficulty;
+    game->active = 1;
+    history_clear(&game->history);
+
+    return holes;
 }
 
 int game_cell_is_fixed(const SudokuGame *game, int row, int column) {
